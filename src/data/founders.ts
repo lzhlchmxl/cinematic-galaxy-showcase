@@ -46,19 +46,18 @@ export const founders: Founder[] = [
   },
   {
     id: 'founder-3',
-    name: 'Wuga Tech',
-    company: 'Wuga Tech',
+    name: 'Taiwo Oyewole',
+    company: 'Vuga Tech',
     description: 'Revolutionary technology solutions with advanced transport systems and cutting-edge infrastructure. Building the future of connected worlds.',
     position: createSpherePosition(19, Math.PI * 0.9, Math.PI / 4.2),
-    color: '#23a6ff',
-    type: 'WugaTech',
-    portraitUrl: '/assets/founders/wuga_tech.png',
-    logoUrl: '/assets/logos/wuga_tech.svg',
+    color: '#FF6B47',
+    type: 'Tarth',
+    portraitUrl: '/src/assets/founders/Taiwo_oyewole.jpeg',
+    logoUrl: '/src/assets/logos/vuga_tech_logo.png',
     planetScale: 1.3,
     links: {
-      website: '#',
-      linkedin: '#',
-      twitter: '#'
+      website: 'https://vugatech.com/',
+      linkedin: 'https://www.linkedin.com/in/taioyewole/'
     }
   },
   {

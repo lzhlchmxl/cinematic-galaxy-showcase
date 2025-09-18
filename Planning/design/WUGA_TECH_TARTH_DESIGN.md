@@ -32,7 +32,7 @@ Billboard
 
 Physical sign (panel + struts) tilted/anchored near the north hemisphere.
 
-Text via <Text> (drei) or a CanvasTexture so you can stylize “Wuga Tech” dynamically.
+Text via <Text> (drei) or a CanvasTexture so you can stylize “Vuga Tech” dynamically.
 
 Material with emissive + bloom to get that neon pop.
 
@@ -64,7 +64,7 @@ export default function Scene() {
       <group rotation-x={MathUtils.degToRad(23.5)}>
         <Planet />
         <Tracks lanes={5} />
-        <Billboard text="Wuga Tech" />
+        <Billboard text="Vuga Tech" />
       </group>
       <OrbitControls enablePan={false} minDistance={10} maxDistance={40} />
       <EffectComposer>

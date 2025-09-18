@@ -1,7 +1,6 @@
 import React, { useRef, useMemo } from 'react';
-import { useFrame, useLoader } from '@react-three/fiber';
-import { Group, Mesh, Vector3, CatmullRomCurve3, TextureLoader, RepeatWrapping, Color } from 'three';
-import { MeshPhysicalMaterial } from 'three';
+import { useFrame } from '@react-three/fiber';
+import { Group, Vector3, CatmullRomCurve3, CanvasTexture, RepeatWrapping, Color } from 'three';
 
 interface TechTracksProps {
   lanes?: number;
@@ -11,53 +10,78 @@ interface TechTracksProps {
 
 export const TechTracks: React.FC<TechTracksProps> = ({
   lanes = 4,
-  radius = 7,
-  planetRadius = 5
+  radius = 1.4
 }) => {
   const groupRef = useRef<Group>(null);
 
-  // Create a simple stripe texture procedurally
-  const stripeTexture = useMemo(() => {
+  // Create asphalt race track texture with animated flowing dashed lines
+  const { raceTrackTexture, emissiveTexture } = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 64;
     const ctx = canvas.getContext('2d')!;
 
-    // Create gradient background
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    gradient.addColorStop(0, 'rgba(35, 166, 255, 0)');
-    gradient.addColorStop(0.3, 'rgba(35, 166, 255, 0.8)');
-    gradient.addColorStop(0.7, 'rgba(113, 255, 204, 0.8)');
-    gradient.addColorStop(1, 'rgba(113, 255, 204, 0)');
-
-    ctx.fillStyle = gradient;
+    // Dark asphalt background
+    ctx.fillStyle = '#181A1F'; // Very dark gray/black for asphalt
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Add bright streaks
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-    ctx.fillRect(canvas.width * 0.1, canvas.height * 0.4, canvas.width * 0.05, canvas.height * 0.2);
-    ctx.fillRect(canvas.width * 0.6, canvas.height * 0.4, canvas.width * 0.03, canvas.height * 0.2);
+    // Create the base track texture
+    const baseTexture = new CanvasTexture(canvas);
+    baseTexture.wrapS = baseTexture.wrapT = RepeatWrapping;
+    baseTexture.repeat.set(1, 1);
 
-    const texture = new TextureLoader().load(canvas.toDataURL());
-    texture.wrapS = texture.wrapT = RepeatWrapping;
-    texture.repeat.set(20, 1);
+    // Create emissive texture for dashed lines
+    const emissiveCanvas = document.createElement('canvas');
+    emissiveCanvas.width = 1024;
+    emissiveCanvas.height = 64;
+    const emissiveCtx = emissiveCanvas.getContext('2d')!;
 
-    return texture;
+    // Transparent background
+    emissiveCtx.fillStyle = 'rgba(0, 0, 0, 1)';
+    emissiveCtx.fillRect(0, 0, emissiveCanvas.width, emissiveCanvas.height);
+
+    // White dashed center line
+    emissiveCtx.strokeStyle = '#ffffff';
+    emissiveCtx.lineWidth = 4;
+    emissiveCtx.setLineDash([30, 20]); // Longer dashes for race track effect
+
+    // Draw center line
+    emissiveCtx.beginPath();
+    emissiveCtx.moveTo(0, emissiveCanvas.height / 2);
+    emissiveCtx.lineTo(emissiveCanvas.width, emissiveCanvas.height / 2);
+    emissiveCtx.stroke();
+
+    // Optional: Add subtle blue-cyan glow around dashes
+    emissiveCtx.globalCompositeOperation = 'source-over';
+    emissiveCtx.strokeStyle = 'rgba(35, 166, 255, 0.6)';
+    emissiveCtx.lineWidth = 6;
+    emissiveCtx.setLineDash([30, 20]);
+    emissiveCtx.beginPath();
+    emissiveCtx.moveTo(0, emissiveCanvas.height / 2);
+    emissiveCtx.lineTo(emissiveCanvas.width, emissiveCanvas.height / 2);
+    emissiveCtx.stroke();
+
+    const emissiveTexture = new CanvasTexture(emissiveCanvas);
+    emissiveTexture.wrapS = emissiveTexture.wrapT = RepeatWrapping;
+    emissiveTexture.repeat.set(100, 1); // High repetition for flowing effect
+
+    return { raceTrackTexture: baseTexture, emissiveTexture };
   }, []);
 
-  // Generate lane curves with variations
+  // Generate 4 lane curves at 1.4 radius from planet center
   const curves = useMemo(() => {
     const trackCurves: CatmullRomCurve3[] = [];
 
     for (let i = 0; i < lanes; i++) {
-      const laneRadius = radius + i * 0.5 + (i % 2 ? 0.15 : -0.15); // Slight variation
+      // Space lanes out more to prevent overlapping
+      const laneRadius = radius + i * 0.25; // Increased spacing between lanes
       const points: Vector3[] = [];
 
-      // Generate points around the equator with slight vertical noise
-      for (let k = 0; k < 200; k++) {
-        const t = (k / 200) * Math.PI * 2;
-        // Add tiny vertical noise so lanes don't look perfectly flat
-        const y = Math.sin(t * 3 + i) * 0.08;
+      // Generate points around the equator for smooth continuous paths
+      for (let k = 0; k < 800; k++) { // 800 segments as specified
+        const t = (k / 800) * Math.PI * 2;
+        // Minimal vertical variation to keep tracks orbital
+        const y = Math.sin(t * 2 + i) * 0.02;
         const x = Math.cos(t) * laneRadius;
         const z = Math.sin(t) * laneRadius;
 
@@ -70,16 +94,10 @@ export const TechTracks: React.FC<TechTracksProps> = ({
     return trackCurves;
   }, [lanes, radius]);
 
-  // Animate stripe flow
+  // Animate flowing dashed lines
   useFrame((_, delta) => {
-    if (groupRef.current) {
-      groupRef.current.traverse((child) => {
-        if (child instanceof Mesh && child.material instanceof MeshPhysicalMaterial) {
-          if (child.material.map) {
-            child.material.map.offset.x += delta * 0.15;
-          }
-        }
-      });
+    if (emissiveTexture) {
+      emissiveTexture.offset.x += delta * 0.15; // Continuous horizontal scroll as specified
     }
   });
 
@@ -87,18 +105,23 @@ export const TechTracks: React.FC<TechTracksProps> = ({
     <group ref={groupRef}>
       {curves.map((curve, index) => (
         <mesh key={index} castShadow receiveShadow>
-          <tubeGeometry args={[curve, 800, 0.18, 24, true]} />
-          <meshPhysicalMaterial
-            transmission={0.9}
-            thickness={0.25}
-            roughness={0.15}
-            clearcoat={1.0}
-            clearcoatRoughness={0.1}
-            ior={1.2}
-            map={stripeTexture}
-            transparent={true}
-            envMapIntensity={1.2}
-            color={new Color('#e8f4ff')}
+          <tubeGeometry
+            args={[
+              curve,
+              800, // 800 segments as specified
+              0.08, // Reduced radius to make tracks thinner
+              16,  // Reduced radial segments for performance
+              false
+            ]}
+          />
+          <meshStandardMaterial
+            map={raceTrackTexture}
+            emissiveMap={emissiveTexture}
+            color={new Color('#181A1F')} // Dark asphalt color as specified
+            emissive={new Color('#ffffff')} // White emissive for dashed lines
+            emissiveIntensity={0.8}
+            roughness={0.8} // High roughness for asphalt (0.7-0.9 range)
+            metalness={0.02} // Very low metalness (0.0-0.05 range)
           />
         </mesh>
       ))}

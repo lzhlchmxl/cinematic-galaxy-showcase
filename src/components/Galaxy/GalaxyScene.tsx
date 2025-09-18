@@ -117,7 +117,7 @@ export const GalaxyScene: React.FC = () => {
             enablePan={false}
           />
 
-          {/* WUGA Tech post-processing effects - temporarily disabled due to version conflicts */}
+          {/* Vuga Tech post-processing effects - temporarily disabled due to runtime error */}
           {/* <PostProcessing
             enableBloom={true}
             enableChromaticAberration={true}

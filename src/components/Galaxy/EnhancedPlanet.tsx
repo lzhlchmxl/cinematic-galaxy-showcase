@@ -1,15 +1,16 @@
 import { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Mesh, Group, Color, AdditiveBlending, BackSide, type MeshStandardMaterialParameters } from 'three';
+import { Mesh, Group, Color, AdditiveBlending, BackSide, CanvasTexture, RepeatWrapping, type MeshStandardMaterialParameters } from 'three';
 import { Sphere, Html } from '@react-three/drei';
 // import { Fresnel } from 'lamina';
 import type { PlanetProps } from '../../types/founder.types';
 import { createPlaceholderPortrait, createPlaceholderLogo } from '../../utils/createPlaceholderImage';
 import { createSaturnTexture, createSaturnRingTexture, createSaturnRingAlphaTexture } from '../../utils/createSaturnTextures';
-import { createEarthDayTexture, createEarthNightTexture, createEarthNormalTexture, createEarthSpecularTexture, createEarthCloudTexture } from '../../utils/createEarthTextures';
+import { createEarthDayTexture, createEarthNormalTexture, createEarthSpecularTexture, createEarthCloudTexture } from '../../utils/createEarthTextures';
 import { SaturnRing } from './SaturnRing';
 import { TechTracks } from './TechTracks';
 import { Billboard } from './Billboard';
+import { EarthPlanetMaterial } from './EarthPlanetMaterial';
 
 // Helper function to get planet type configuration
 const getPlanetTypeConfig = (type: string): {
@@ -94,7 +95,7 @@ const getPlanetTypeConfig = (type: string): {
         },
         hasRings: false
       };
-    case 'WugaTech':
+    case 'Tarth':
       return {
         materialProps: {
           roughness: 0.22,
@@ -127,6 +128,7 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
 
   const [rotationSpeed] = useState(() => 0.01 + Math.random() * 0.02);
   const [ringRotationSpeed] = useState(() => 0.005 + Math.random() * 0.01);
+  const [shaderTime, setShaderTime] = useState(0);
 
   // Get planet type configuration
   const typeConfig = useMemo(() => getPlanetTypeConfig(founder.type), [founder.type]);
@@ -162,16 +164,88 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
     return null;
   }, [founder.type]);
 
-  // Create Earth textures (used by both Earth and WugaTech)
+  // Create Earth textures (Earth only, no night textures)
   const earthTextures = useMemo(() => {
-    if (founder.type === 'Earth' || founder.type === 'WugaTech') {
+    if (founder.type === 'Earth') {
       return {
         dayTexture: createEarthDayTexture(),
-        nightTexture: createEarthNightTexture(),
         normalTexture: createEarthNormalTexture(),
         specularTexture: createEarthSpecularTexture(),
         cloudTexture: createEarthCloudTexture()
       };
+    }
+    return null;
+  }, [founder.type]);
+
+  // Create Tarth red pattern texture
+  const tarthPatternTexture = useMemo(() => {
+    if (founder.type === 'Tarth') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d')!;
+
+      // Clear with transparent background
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Set red color
+      ctx.strokeStyle = '#FF0000';
+      ctx.fillStyle = '#CC0000';
+      ctx.lineWidth = 2;
+
+      // Draw hexagons lined up around the equator
+      const equatorY = canvas.height / 2; // Middle of the texture (equator)
+      const hexagonCount = 12; // Number of hexagons around equator
+      const hexagonSize = 20; // Fixed size for uniformity
+      const spacing = canvas.width / hexagonCount; // Even spacing
+
+      for (let i = 0; i < hexagonCount; i++) {
+        const x = i * spacing + spacing / 2; // Center each hexagon in its space
+        const y = equatorY; // Align on equator
+
+        // Draw filled hexagons
+        ctx.beginPath();
+        for (let j = 0; j < 6; j++) {
+          const angle = (j * Math.PI * 2) / 6;
+          const px = x + Math.cos(angle) * hexagonSize;
+          const py = y + Math.sin(angle) * hexagonSize;
+          if (j === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fill(); // Fill the hexagon
+        ctx.stroke(); // Add outline for definition
+      }
+
+      // Draw grid lines
+      ctx.strokeStyle = '#FF3333';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 40) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 30) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Draw diagonal stripes
+      ctx.strokeStyle = '#FF6666';
+      for (let i = 0; i < canvas.width + canvas.height; i += 50) {
+        ctx.beginPath();
+        ctx.moveTo(i, 0);
+        ctx.lineTo(i - canvas.height, canvas.height);
+        ctx.stroke();
+      }
+
+      const texture = new CanvasTexture(canvas);
+      texture.wrapS = texture.wrapT = RepeatWrapping;
+      texture.repeat.set(3, 2);
+      return texture;
     }
     return null;
   }, [founder.type]);
@@ -187,8 +261,8 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
       // Base rotation
       meshRef.current.rotation.y += rotationSpeed * delta;
 
-      // Earth/WugaTech cloud rotation (slightly faster than planet)
-      if (cloudRef.current && (founder.type === 'Earth' || founder.type === 'WugaTech')) {
+      // Earth cloud rotation (slightly faster than planet, Earth only)
+      if (cloudRef.current && founder.type === 'Earth') {
         cloudRef.current.rotation.y += rotationSpeed * 1.2 * delta;
       }
 
@@ -206,7 +280,10 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
       const time = state.clock.getElapsedTime();
       groupRef.current.position.y = founder.position.y + Math.sin(time * 0.5 + founder.position.x) * 0.2;
 
-      // Shader material updates removed for stability
+      // Update shader time for Earth
+      if (founder.type === 'Earth') {
+        setShaderTime(time);
+      }
     }
   });
 
@@ -217,7 +294,7 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
       scale={planetScale}
       rotation={
         founder.type === 'Saturn' ? [Math.PI * 26.7 / 180, 0, 0] :
-        (founder.type === 'Earth' || founder.type === 'WugaTech') ? [Math.PI * 23.5 / 180, 0, 0] : // Axial tilt for Earth/WugaTech
+        (founder.type === 'Earth' || founder.type === 'Tarth') ? [Math.PI * 23.5 / 180, 0, 0] : // Axial tilt for Earth/Tarth
         [0, 0, 0]
       }
       onClick={() => onClick(founder)}
@@ -230,35 +307,63 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
         args={[1, 64, 64]}
         scale={
           founder.type === 'Saturn' ? [1, 0.9, 1] :
-          (founder.type === 'Earth' || founder.type === 'WugaTech') ? [1, 0.97, 1] : // Oblate scaling for Earth/WugaTech
+          (founder.type === 'Earth' || founder.type === 'Tarth') ? [1, 0.97, 1] : // Oblate scaling for Earth/Tarth
           [1, 1, 1]
         }
       >
-        <meshStandardMaterial
-          color={planetColor}
-          map={
-            saturnTextures?.planetTexture ||
-            earthTextures?.dayTexture ||
-            undefined
-          }
-          emissive={
-            (founder.type === 'Earth' || founder.type === 'WugaTech') ? new Color('#DDDDDD') : emissiveColor
-          }
-          emissiveMap={earthTextures?.nightTexture || undefined}
-          emissiveIntensity={
-            (founder.type === 'Earth' || founder.type === 'WugaTech') ? 0.7 :
-            (isHovered ? 0.4 : 0.15)
-          }
-          normalMap={earthTextures?.normalTexture || undefined}
-          roughnessMap={earthTextures?.specularTexture || undefined}
-          {...((founder.type === 'Earth' || founder.type === 'WugaTech') ? {
-            roughness: 0.22,
-            metalness: 0.15
-          } : typeConfig.materialProps)}
-          transparent
-          opacity={0.98}
-        />
+        {founder.type === 'Earth' ? (
+          <EarthPlanetMaterial
+            dayTexture={earthTextures?.dayTexture}
+            normalTexture={earthTextures?.normalTexture}
+            specularTexture={earthTextures?.specularTexture}
+            time={shaderTime}
+          />
+        ) : (
+          <meshStandardMaterial
+            color={
+              founder.type === 'Tarth' ?
+                new Color('#FF8C00') : // Rich orange color
+                planetColor
+            }
+            map={saturnTextures?.planetTexture || undefined}
+            emissive={
+              founder.type === 'Tarth' ?
+                new Color('#FF6B47').multiplyScalar(0.3) : // Warm orange-red emissive for Tarth
+                emissiveColor
+            }
+            emissiveIntensity={
+              founder.type === 'Tarth' ? 0.4 : // Tarth gets emissive
+              (isHovered ? 0.4 : 0.15) // Others use standard emissive
+            }
+            {...(founder.type === 'Tarth' ? {
+              roughness: 0.8, // Higher roughness for matte surface
+              metalness: 0.05 // Very low metalness to avoid plastic look
+            } : typeConfig.materialProps)}
+            transparent={founder.type === 'Tarth' ? false : true} // Remove transparency for Tarth only
+            opacity={founder.type === 'Tarth' ? 1.0 : 0.98} // Full opacity for Tarth
+          />
+        )}
       </Sphere>
+
+      {/* Tarth red decoration patterns - separate layer */}
+      {founder.type === 'Tarth' && tarthPatternTexture && (
+        <Sphere
+          args={[1.015, 64, 64]} // Slightly larger to avoid z-fighting
+          scale={[1, 0.97, 1]} // Match planet oblate scaling
+        >
+          <meshStandardMaterial
+            map={tarthPatternTexture}
+            color={new Color('#FF0000')} // Bright red color
+            transparent
+            opacity={0.8}
+            alphaTest={0.1}
+            roughness={0.9}
+            metalness={0.0}
+            emissive={new Color('#CC0000')}
+            emissiveIntensity={0.3}
+          />
+        </Sphere>
+      )}
 
       {/* Thematic orbital rings - rendered conditionally based on planet type */}
       {typeConfig.hasRings && (
@@ -332,8 +437,8 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
       )}
 
 
-      {/* Earth/WugaTech cloud layer with oblate scaling */}
-      {(founder.type === 'Earth' || founder.type === 'WugaTech') && earthTextures && (
+      {/* Earth cloud layer with oblate scaling (Earth only, not Tarth) */}
+      {founder.type === 'Earth' && earthTextures && (
         <Sphere
           ref={cloudRef}
           args={[1.01, 48, 48]}
@@ -349,19 +454,19 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
         </Sphere>
       )}
 
-      {/* WugaTech Transport Tracks */}
-      {founder.type === 'WugaTech' && (
+      {/* Tarth Transport Tracks */}
+      {founder.type === 'Tarth' && (
         <TechTracks
-          lanes={5}
+          lanes={4}
           radius={1.4}
           planetRadius={1.0}
         />
       )}
 
-      {/* WugaTech Billboard */}
-      {founder.type === 'WugaTech' && (
+      {/* Tarth Billboard Only */}
+      {founder.type === 'Tarth' && (
         <Billboard
-          text="Wuga Tech"
+          text="Vuga Tech"
           position={[0, 1.8, 0]}
           scale={0.8}
         />
@@ -369,35 +474,32 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
 
       {/* Earth-specific lighting removed - using material properties for brightness */}
 
-      {/* Enhanced atmospheric glow - multiple layers for depth */}
-      <Sphere args={[1.15, 24, 24]}>
-        <meshBasicMaterial
-          color={(founder.type === 'Earth' || founder.type === 'WugaTech') ? new Color('#B0E0E6') : planetColor}
-          transparent
-          opacity={
-            (founder.type === 'Earth' || founder.type === 'WugaTech') ?
-              (isHovered ? 0.18 : 0.12) :
-              (isHovered ? 0.15 : 0.08)
-          }
-          side={BackSide}
-          blending={AdditiveBlending}
-        />
-      </Sphere>
+      {/* Enhanced atmospheric glow - Earth only */}
+      {founder.type === 'Earth' && (
+        <Sphere args={[1.15, 24, 24]}>
+          <meshBasicMaterial
+            color={new Color('#A0C0F0')} // Sky blue for more natural atmosphere
+            transparent
+            opacity={isHovered ? 0.18 : 0.12}
+            side={BackSide}
+            blending={AdditiveBlending}
+          />
+        </Sphere>
+      )}
 
-      {/* Outer atmospheric glow */}
-      <Sphere args={[1.25, 24, 24]}>
-        <meshBasicMaterial
-          color={(founder.type === 'Earth' || founder.type === 'WugaTech') ? new Color('#B0E0E6') : planetColor}
-          transparent
-          opacity={
-            (founder.type === 'Earth' || founder.type === 'WugaTech') ?
-              (isHovered ? 0.15 : 0.15) :
-              (isHovered ? 0.08 : 0.04)
-          }
-          side={BackSide}
-          blending={AdditiveBlending}
-        />
-      </Sphere>
+      {/* Outer atmospheric glow - Earth only */}
+      {founder.type === 'Earth' && (
+        <Sphere args={[1.25, 24, 24]}>
+          <meshBasicMaterial
+            color={new Color('#A0C0F0')} // Sky blue for more natural atmosphere
+            transparent
+            opacity={isHovered ? 0.15 : 0.15}
+            side={BackSide}
+            blending={AdditiveBlending}
+          />
+        </Sphere>
+      )}
+
 
 
       {/* Interactive Hover System - Founder Portrait */}

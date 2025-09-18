@@ -9,12 +9,12 @@ export const createEarthDayTexture = (): CanvasTexture => {
   canvas.width = 2048;
   canvas.height = 1024;
 
-  // Create stylized ocean base - brighter and more saturated for material enhancement
-  ctx.fillStyle = '#5BA3F5'; // Brighter, more saturated ocean blue
+  // Create realistic ocean base - deep, natural blue
+  ctx.fillStyle = '#4A729D'; // Deep, rich blue for natural oceans
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Stylized continent shapes - brighter blue-green for enhanced vibrancy
-  ctx.fillStyle = '#52D195'; // Brighter, more saturated blue-green continents
+  // Natural continent shapes - realistic green with terrain variation
+  ctx.fillStyle = '#67945A'; // Natural green base for continents
 
   // North America - more realistic shape
   ctx.beginPath();
@@ -54,9 +54,29 @@ export const createEarthDayTexture = (): CanvasTexture => {
   ctx.ellipse(canvas.width * 0.82, canvas.height * 0.72, 60, 35, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Simplified stylized terrain - remove hyper-realistic features per designer feedback
-  // Focus on broad landmass shapes only, no specific terrain features
-  ctx.globalAlpha = 1.0; // Keep full opacity for clean stylized look
+  // Add terrain variation with arid/mountain tones
+  ctx.globalAlpha = 0.4; // Semi-transparent for blending
+  ctx.fillStyle = '#B5A642'; // Arid/mountain brown-yellow tones
+
+  // Add random terrain patches for natural variation
+  for (let i = 0; i < 150; i++) {
+    const x = Math.random() * canvas.width;
+    const y = Math.random() * canvas.height;
+    const size = 10 + Math.random() * 40;
+
+    // Check if we're over a continent area (green pixels)
+    const imageData = ctx.getImageData(x, y, 1, 1);
+    const [, g, b] = imageData.data;
+    const isLand = g > 120 && b < 200; // Rough detection of green continent areas
+
+    if (isLand) {
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  ctx.globalAlpha = 1.0; // Reset opacity
 
   // Softened polar ice caps - ethereal transitions per designer feedback
   const polarGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.2);
