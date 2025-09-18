@@ -166,7 +166,7 @@ export const DynamicLighting: React.FC<DynamicLightingProps> = ({
       <directionalLight
         ref={mainLightRef}
         position={[15, 15, 5]}
-        intensity={earthPosition ? 1.2 : 0.9}
+        intensity={earthPosition ? 1.5 : 1.2}
         color="#fff8f0"
         castShadow
         shadow-mapSize-width={4096}

@@ -1,6 +1,6 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Points, BufferGeometry, PointsMaterial, BufferAttribute, AdditiveBlending, Mesh, CanvasTexture } from 'three';
+import { Points, BufferGeometry, PointsMaterial, BufferAttribute, Mesh, CanvasTexture } from 'three';
 import * as THREE from 'three';
 // PNG nebula textures replaced with 3D volumetric particle clouds
 import { founders } from '../../data/founders';
@@ -26,7 +26,7 @@ const AsteroidMesh: React.FC<{
 }> = ({ asteroid, geometry }) => {
   const meshRef = useRef<Mesh>(null);
 
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     if (meshRef.current) {
       // Apply individual rotation speeds
       meshRef.current.rotation.x += asteroid.rotationSpeed[0] * delta;
@@ -61,7 +61,6 @@ export const StarField: React.FC<StarFieldProps> = ({
 }) => {
   const pointsRef = useRef<Points>(null);
   const materialRef = useRef<PointsMaterial>(null);
-  const nebulaRef = useRef<Mesh>(null);
 
   // Create procedural star texture with guaranteed transparency
   const starTextureMap = useMemo(() => {
@@ -135,7 +134,7 @@ export const StarField: React.FC<StarFieldProps> = ({
 
   // Generate nebula particle clouds
   const nebulaClouds = useMemo(() => {
-    const clouds = [];
+    const clouds: any[] = [];
 
     // Create 3 major nebula regions - closer and more visible
     const nebulaRegions = [

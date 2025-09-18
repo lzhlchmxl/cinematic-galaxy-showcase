@@ -127,14 +127,6 @@ export const FounderModal: React.FC<FounderModalProps> = ({ founder, onClose }) 
                   <HolographicButton
                     onClick={onClose}
                     variant="danger"
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      padding: '0',
-                      fontSize: '18px',
-                      minWidth: 'unset'
-                    }}
                   >
                     ×
                   </HolographicButton>
@@ -232,9 +224,8 @@ export const FounderModal: React.FC<FounderModalProps> = ({ founder, onClose }) 
                       height: '120px',
                       border: `1px solid ${founder.color}44`,
                       borderRadius: '50%',
-                      borderStyle: 'dashed',
-                      borderDasharray: '5px 10px'
-                    }}
+                      borderStyle: 'dashed'
+                    } as React.CSSProperties}
                   />
                 </div>
 

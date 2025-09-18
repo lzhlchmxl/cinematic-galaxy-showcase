@@ -8,6 +8,8 @@ import { createPlaceholderPortrait, createPlaceholderLogo } from '../../utils/cr
 import { createSaturnTexture, createSaturnRingTexture, createSaturnRingAlphaTexture } from '../../utils/createSaturnTextures';
 import { createEarthDayTexture, createEarthNightTexture, createEarthNormalTexture, createEarthSpecularTexture, createEarthCloudTexture } from '../../utils/createEarthTextures';
 import { SaturnRing } from './SaturnRing';
+import { TechTracks } from './TechTracks';
+import { Billboard } from './Billboard';
 
 // Helper function to get planet type configuration
 const getPlanetTypeConfig = (type: string): {
@@ -92,6 +94,14 @@ const getPlanetTypeConfig = (type: string): {
         },
         hasRings: false
       };
+    case 'WugaTech':
+      return {
+        materialProps: {
+          roughness: 0.22,
+          metalness: 0.15,
+        },
+        hasRings: false // Uses TechTracks instead
+      };
     default:
       return {
         materialProps: {
@@ -152,9 +162,9 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
     return null;
   }, [founder.type]);
 
-  // Create Earth textures
+  // Create Earth textures (used by both Earth and WugaTech)
   const earthTextures = useMemo(() => {
-    if (founder.type === 'Earth') {
+    if (founder.type === 'Earth' || founder.type === 'WugaTech') {
       return {
         dayTexture: createEarthDayTexture(),
         nightTexture: createEarthNightTexture(),
@@ -177,8 +187,8 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
       // Base rotation
       meshRef.current.rotation.y += rotationSpeed * delta;
 
-      // Earth cloud rotation (slightly faster than planet)
-      if (cloudRef.current && founder.type === 'Earth') {
+      // Earth/WugaTech cloud rotation (slightly faster than planet)
+      if (cloudRef.current && (founder.type === 'Earth' || founder.type === 'WugaTech')) {
         cloudRef.current.rotation.y += rotationSpeed * 1.2 * delta;
       }
 
@@ -205,7 +215,11 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
       ref={groupRef}
       position={founder.position}
       scale={planetScale}
-      rotation={founder.type === 'Saturn' ? [Math.PI * 26.7 / 180, 0, 0] : [0, 0, 0]}
+      rotation={
+        founder.type === 'Saturn' ? [Math.PI * 26.7 / 180, 0, 0] :
+        (founder.type === 'Earth' || founder.type === 'WugaTech') ? [Math.PI * 23.5 / 180, 0, 0] : // Axial tilt for Earth/WugaTech
+        [0, 0, 0]
+      }
       onClick={() => onClick(founder)}
       onPointerOver={() => onHover(founder)}
       onPointerOut={() => onHover(null)}
@@ -214,7 +228,11 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
       <Sphere
         ref={meshRef}
         args={[1, 64, 64]}
-        scale={founder.type === 'Saturn' ? [1, 0.9, 1] : [1, 1, 1]}
+        scale={
+          founder.type === 'Saturn' ? [1, 0.9, 1] :
+          (founder.type === 'Earth' || founder.type === 'WugaTech') ? [1, 0.97, 1] : // Oblate scaling for Earth/WugaTech
+          [1, 1, 1]
+        }
       >
         <meshStandardMaterial
           color={planetColor}
@@ -224,23 +242,21 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
             undefined
           }
           emissive={
-            founder.type === 'Earth' ? new Color('#1a3b5c') : emissiveColor
+            (founder.type === 'Earth' || founder.type === 'WugaTech') ? new Color('#DDDDDD') : emissiveColor
           }
           emissiveMap={earthTextures?.nightTexture || undefined}
           emissiveIntensity={
-            founder.type === 'Earth' ? (isHovered ? 0.8 : 0.4) :
+            (founder.type === 'Earth' || founder.type === 'WugaTech') ? 0.7 :
             (isHovered ? 0.4 : 0.15)
           }
           normalMap={earthTextures?.normalTexture || undefined}
           roughnessMap={earthTextures?.specularTexture || undefined}
-          {...(founder.type === 'Earth' ? {
-            roughness: 0.3,
+          {...((founder.type === 'Earth' || founder.type === 'WugaTech') ? {
+            roughness: 0.22,
             metalness: 0.15
           } : typeConfig.materialProps)}
           transparent
           opacity={0.98}
-          castShadow
-          receiveShadow
         />
       </Sphere>
 
@@ -316,72 +332,51 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
       )}
 
 
-      {/* Earth cloud layer */}
-      {founder.type === 'Earth' && earthTextures && (
-        <Sphere ref={cloudRef} args={[1.01, 48, 48]}>
+      {/* Earth/WugaTech cloud layer with oblate scaling */}
+      {(founder.type === 'Earth' || founder.type === 'WugaTech') && earthTextures && (
+        <Sphere
+          ref={cloudRef}
+          args={[1.01, 48, 48]}
+          scale={[1, 0.97, 1]} // Match Earth's oblate scaling
+        >
           <meshStandardMaterial
             map={earthTextures.cloudTexture}
             transparent
             opacity={isHovered ? 0.9 : 0.7}
             alphaTest={0.1}
             side={2}
-            castShadow
-            receiveShadow
           />
         </Sphere>
       )}
 
-      {/* Earth-specific dramatic lighting */}
-      {founder.type === 'Earth' && (
-        <group>
-          {/* Primary Earth spotlight - aligned with general lighting */}
-          <directionalLight
-            position={[founder.position.x + 15, founder.position.y + 15, founder.position.z + 5]}
-            target-position={[founder.position.x, founder.position.y, founder.position.z]}
-            intensity={1.35}
-            color="#fff8f0"
-            castShadow
-            shadow-mapSize-width={4096}
-            shadow-mapSize-height={4096}
-            shadow-bias={-0.0001}
-          />
-
-          {/* Earth fill light */}
-          <pointLight
-            position={[founder.position.x - 6, founder.position.y - 4, founder.position.z + 8]}
-            intensity={0.8}
-            distance={20}
-            decay={2}
-            color="#87ceeb"
-          />
-
-          {/* Atmospheric rim lighting */}
-          <directionalLight
-            position={[founder.position.x - 12, founder.position.y + 8, founder.position.z - 15]}
-            target-position={[founder.position.x, founder.position.y, founder.position.z]}
-            intensity={1.2}
-            color="#6bb6ff"
-          />
-
-          {/* Secondary highlight for ocean reflection */}
-          <pointLight
-            position={[founder.position.x + 4, founder.position.y - 8, founder.position.z + 12]}
-            intensity={0.6}
-            distance={15}
-            decay={2}
-            color="#93c5fd"
-          />
-        </group>
+      {/* WugaTech Transport Tracks */}
+      {founder.type === 'WugaTech' && (
+        <TechTracks
+          lanes={5}
+          radius={1.4}
+          planetRadius={1.0}
+        />
       )}
+
+      {/* WugaTech Billboard */}
+      {founder.type === 'WugaTech' && (
+        <Billboard
+          text="Wuga Tech"
+          position={[0, 1.8, 0]}
+          scale={0.8}
+        />
+      )}
+
+      {/* Earth-specific lighting removed - using material properties for brightness */}
 
       {/* Enhanced atmospheric glow - multiple layers for depth */}
       <Sphere args={[1.15, 24, 24]}>
         <meshBasicMaterial
-          color={founder.type === 'Earth' ? new Color('#6BB6FF') : planetColor}
+          color={(founder.type === 'Earth' || founder.type === 'WugaTech') ? new Color('#B0E0E6') : planetColor}
           transparent
           opacity={
-            founder.type === 'Earth' ?
-              (isHovered ? 0.25 : 0.15) :
+            (founder.type === 'Earth' || founder.type === 'WugaTech') ?
+              (isHovered ? 0.18 : 0.12) :
               (isHovered ? 0.15 : 0.08)
           }
           side={BackSide}
@@ -392,11 +387,11 @@ export const EnhancedPlanet: React.FC<PlanetProps> = ({
       {/* Outer atmospheric glow */}
       <Sphere args={[1.25, 24, 24]}>
         <meshBasicMaterial
-          color={founder.type === 'Earth' ? new Color('#87CEEB') : planetColor}
+          color={(founder.type === 'Earth' || founder.type === 'WugaTech') ? new Color('#B0E0E6') : planetColor}
           transparent
           opacity={
-            founder.type === 'Earth' ?
-              (isHovered ? 0.15 : 0.1) :
+            (founder.type === 'Earth' || founder.type === 'WugaTech') ?
+              (isHovered ? 0.15 : 0.15) :
               (isHovered ? 0.08 : 0.04)
           }
           side={BackSide}

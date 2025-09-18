@@ -9,21 +9,12 @@ export const createEarthDayTexture = (): CanvasTexture => {
   canvas.width = 2048;
   canvas.height = 1024;
 
-  // Create realistic ocean base with depth gradients
-  const oceanGradient = ctx.createRadialGradient(
-    canvas.width * 0.5, canvas.height * 0.5, 0,
-    canvas.width * 0.5, canvas.height * 0.5, Math.max(canvas.width, canvas.height) * 0.6
-  );
-  oceanGradient.addColorStop(0, '#0066cc');     // Deep ocean blue
-  oceanGradient.addColorStop(0.3, '#0080ff');   // Mid ocean blue
-  oceanGradient.addColorStop(0.6, '#0099ff');   // Shallow water blue
-  oceanGradient.addColorStop(1, '#004080');     // Deep trench blue
-
-  ctx.fillStyle = oceanGradient;
+  // Create stylized ocean base - brighter and more saturated for material enhancement
+  ctx.fillStyle = '#5BA3F5'; // Brighter, more saturated ocean blue
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Realistic continent colors - vibrant green landmasses
-  ctx.fillStyle = '#16a34a'; // Bright realistic green for continents
+  // Stylized continent shapes - brighter blue-green for enhanced vibrancy
+  ctx.fillStyle = '#52D195'; // Brighter, more saturated blue-green continents
 
   // North America - more realistic shape
   ctx.beginPath();
@@ -63,42 +54,26 @@ export const createEarthDayTexture = (): CanvasTexture => {
   ctx.ellipse(canvas.width * 0.82, canvas.height * 0.72, 60, 35, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Realistic terrain features - Sahara, Amazon, mountain ranges
-  ctx.fillStyle = '#c97e3a'; // Desert/mountain brown
+  // Simplified stylized terrain - remove hyper-realistic features per designer feedback
+  // Focus on broad landmass shapes only, no specific terrain features
+  ctx.globalAlpha = 1.0; // Keep full opacity for clean stylized look
 
-  // Sahara Desert
-  ctx.beginPath();
-  ctx.ellipse(canvas.width * 0.45, canvas.height * 0.4, 60, 25, 0, 0, Math.PI * 2);
-  ctx.fill();
+  // Softened polar ice caps - ethereal transitions per designer feedback
+  const polarGradient = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.2);
+  polarGradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+  polarGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
+  polarGradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)');
 
-  // Amazon Basin (darker green)
-  ctx.fillStyle = '#0f5132';
-  ctx.beginPath();
-  ctx.ellipse(canvas.width * 0.2, canvas.height * 0.65, 45, 35, 0, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.fillStyle = polarGradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height * 0.12);
 
-  // Himalayan mountain range
-  ctx.fillStyle = '#8b4513';
-  ctx.beginPath();
-  ctx.ellipse(canvas.width * 0.65, canvas.height * 0.35, 35, 15, Math.PI * 0.3, 0, Math.PI * 2);
-  ctx.fill();
+  const southPolarGradient = ctx.createLinearGradient(0, canvas.height * 0.8, 0, canvas.height);
+  southPolarGradient.addColorStop(0, 'rgba(255, 255, 255, 0.1)');
+  southPolarGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.5)');
+  southPolarGradient.addColorStop(1, 'rgba(255, 255, 255, 0.9)');
 
-  // Andes Mountains
-  ctx.beginPath();
-  for (let i = 0; i < 8; i++) {
-    const x = canvas.width * 0.15 + i * 5;
-    const y = canvas.height * 0.5 + i * 8 + Math.sin(i * 0.5) * 10;
-    ctx.beginPath();
-    ctx.arc(x, y, 8, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Sharp polar ice caps - realistic transitions
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, canvas.width, canvas.height * 0.08);
-
-  // Antarctic ice cap
-  ctx.fillRect(0, canvas.height * 0.92, canvas.width, canvas.height * 0.08);
+  ctx.fillStyle = southPolarGradient;
+  ctx.fillRect(0, canvas.height * 0.88, canvas.width, canvas.height * 0.12);
 
   const texture = new CanvasTexture(canvas);
   texture.wrapS = texture.wrapT = MirroredRepeatWrapping;
@@ -380,15 +355,7 @@ export const createEarthCloudTexture = (): CanvasTexture => {
 
   // Create realistic weather patterns
 
-  // Tropical convergence zone (equatorial clouds)
-  const equatorY = canvas.height * 0.5;
-  const equatorGradient = ctx.createLinearGradient(0, equatorY - 40, 0, equatorY + 40);
-  equatorGradient.addColorStop(0, 'rgba(255, 255, 255, 0)');
-  equatorGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.6)');
-  equatorGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-
-  ctx.fillStyle = equatorGradient;
-  ctx.fillRect(0, equatorY - 40, canvas.width, 80);
+  // Skip equatorial convergence zone to avoid white horizontal line
 
   // Trade wind cloud bands
   const tradeWinds = [

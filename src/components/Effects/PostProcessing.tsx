@@ -1,23 +1,26 @@
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette, ChromaticAberration } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
 
 interface PostProcessingProps {
   enableBloom?: boolean;
   enableVignette?: boolean;
+  enableChromaticAberration?: boolean;
   bloomIntensity?: number;
   bloomThreshold?: number;
+  chromaticAberrationOffset?: [number, number];
 }
 
 export const PostProcessing: React.FC<PostProcessingProps> = ({
   enableBloom = true,
   enableVignette = true,
-  bloomIntensity = 0.3,
-  bloomThreshold = 0.9
+  enableChromaticAberration = true,
+  bloomIntensity = 0.8,
+  bloomThreshold = 0.35,
+  chromaticAberrationOffset = [0.0007, 0.0005]
 }) => {
   return (
     <EffectComposer>
-      {/* Subtle bloom for planetary glow */}
-      {enableBloom && (
+      {enableBloom ? (
         <Bloom
           intensity={bloomIntensity}
           luminanceThreshold={bloomThreshold}
@@ -25,19 +28,24 @@ export const PostProcessing: React.FC<PostProcessingProps> = ({
           mipmapBlur={true}
           blendFunction={BlendFunction.ADD}
         />
-      )}
+      ) : <></>}
 
-      {/* Depth of field removed for stability */}
+      {enableChromaticAberration ? (
+        <ChromaticAberration
+          offset={chromaticAberrationOffset}
+          radialModulation={false}
+          modulationOffset={0.0}
+        />
+      ) : <></>}
 
-      {/* Subtle vignette for cinematic framing */}
-      {enableVignette && (
+      {enableVignette ? (
         <Vignette
           offset={0.3}
           darkness={0.5}
           eskil={false}
           blendFunction={BlendFunction.NORMAL}
         />
-      )}
+      ) : <></>}
     </EffectComposer>
   );
 };

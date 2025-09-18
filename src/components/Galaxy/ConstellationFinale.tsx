@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Points, BufferGeometry, PointsMaterial, BufferAttribute, Vector3 } from 'three';
+import { Points, PointsMaterial, Vector3 } from 'three';
 import * as THREE from 'three';
 
 interface ConstellationFinaleProps {
@@ -19,7 +19,6 @@ export const ConstellationFinale: React.FC<ConstellationFinaleProps> = ({
   // Define constellation points for "BILL LIANG"
   const { positions, targetPositions, colors } = useMemo(() => {
     const letterSpacing = 6;
-    const lineHeight = 8;
     const startX = -20;
     const startY = 0;
 

@@ -28,7 +28,7 @@ export const ProgressiveLoader: React.FC<ProgressiveLoaderProps> = ({
   ];
 
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: number;
 
     const executeStep = (stepIndex: number) => {
       if (stepIndex >= loadingSteps.length) {

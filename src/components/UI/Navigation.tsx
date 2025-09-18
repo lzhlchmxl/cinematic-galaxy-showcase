@@ -40,10 +40,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           background: `
             radial-gradient(ellipse at center, rgba(0, 255, 136, 0.2) 0%, transparent 60%),
             linear-gradient(135deg, rgba(0, 0, 17, 0.95) 0%, rgba(0, 17, 51, 0.9) 100%)
-          `,
-          '@media (min-width: 768px)': {
-            padding: '16px 24px'
-          }
+          `
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

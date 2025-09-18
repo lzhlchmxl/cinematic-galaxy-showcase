@@ -1,6 +1,6 @@
 import { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Points, BufferGeometry, PointsMaterial, BufferAttribute, ShaderMaterial, AdditiveBlending } from 'three';
+import { Points, BufferGeometry, BufferAttribute, ShaderMaterial, AdditiveBlending } from 'three';
 import * as THREE from 'three';
 
 interface ParticleTrailsProps {

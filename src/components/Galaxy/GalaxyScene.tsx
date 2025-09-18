@@ -57,9 +57,7 @@ export const GalaxyScene: React.FC = () => {
           alpha: true
         }}
         shadows={{
-          enabled: true,
-          type: 'PCFSoftShadowMap',
-          shadowMapSize: 2048
+          enabled: true
         }}
       >
         <Suspense fallback={null}>
@@ -119,12 +117,14 @@ export const GalaxyScene: React.FC = () => {
             enablePan={false}
           />
 
-          {/* Post-processing disabled due to library compatibility issues */}
+          {/* WUGA Tech post-processing effects - temporarily disabled due to version conflicts */}
           {/* <PostProcessing
             enableBloom={true}
-            enableVignette={true}
-            bloomIntensity={0.2}
-            bloomThreshold={0.95}
+            enableChromaticAberration={true}
+            enableVignette={false}
+            bloomIntensity={0.8}
+            bloomThreshold={0.35}
+            chromaticAberrationOffset={[0.0007, 0.0005]}
           /> */}
         </Suspense>
       </Canvas>
